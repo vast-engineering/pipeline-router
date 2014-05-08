@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "formidable": "1.0.14",
-    "node-pipeline": "~1.0.1",
+    "node-pipeline": "git+https://github.com/vast-engineering/pipeline.git",
     "lodash": "~2.4.1",
     "hammock": "~0.1.5",
     "guid": "0.0.11"
