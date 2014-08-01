@@ -50,7 +50,7 @@ Router.prototype.dispatch = function(req, res) {
         var matched = results[0].matched,
             res = results[0].res;
 
-        if (!matched || err) {    
+        if (!matched || err) {
             res.statusCode = 404;
             res.write("No matching route or failed route");
             res.end(err ? err.stack : '');
@@ -84,10 +84,18 @@ Router.prototype.use = function(method, urlformat, callback) {
         var matched = data[0].matched,
             req = data[0].req,
             res = data[0].res,
-            pathname = req.urlParsed.pathname;
+            pathname = req.urlParsed.pathname,
+            validMethod = false;
 
-        if ( !matched && req.method === options.method && options.urlformat.test(pathname) ) {
-            
+	    // check if method is HEAD and options method is GET
+	    if (req.method === options.method
+		    || req.method == 'HEAD' && options.method == 'GET'
+		    ) {
+		    validMethod = true;
+	    }
+
+	    if (!matched && validMethod && options.urlformat.test(pathname)) {
+
             // stop trying to match
             data[0].matched = true;
             next(null, options);
