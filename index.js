@@ -115,7 +115,7 @@ Router.prototype.dispatch = function(request, response) {
 
 
 
-Router.prototype.use = function(method, urlformat, options, formats, handle) {
+Router.prototype.use = function(method, urlformat, options, formats, pageType, handle) {
   var options = options || {},
     that = this;
   
@@ -123,6 +123,7 @@ Router.prototype.use = function(method, urlformat, options, formats, handle) {
   options.method = method.toUpperCase();
   options.query = _.pick(this.query, options.query);
   options.formats = formats;
+  options.pageType = pageType;
 
   if (options.timeout == null) {
     options.timeout = this.timeout; // default 30s timeout
@@ -222,6 +223,8 @@ Router.prototype.use = function(method, urlformat, options, formats, handle) {
 
       // send to handler
       httpContext.params = that.parseUrl(fragment, options.paramMap);
+      httpContext.pageType = options.pageType;
+
       emitEvaluateEvent(httpContext, true);
 
       if (options.timeout) {
