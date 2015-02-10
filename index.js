@@ -1,10 +1,9 @@
-/* global logger */
-var util = require('util');
-var events = require('events');
-var _ = require('lodash');
-var HttpContext = require('./lib/httpcontext.js');
-var pipeline = require('node-pipeline');
-var formidable = require('formidable');
+var util = require("util"),
+  events = require('events'),
+  _ = require('lodash'),
+  HttpContext = require('./lib/httpcontext.js'),
+  pipeline = require('node-pipeline'),
+  formidable = require('formidable');
 
 var Router = function() {
   var that = this;
@@ -94,8 +93,8 @@ Router.prototype.dispatch = function(request, response) {
 
 
 Router.prototype.use = function(method, urlformat, options, handle) {
-  options = options || {};
-  var that = this;
+  var options = options || {},
+    that = this;
 
   options.handle = _.last(arguments);
   options.method = method.toUpperCase();
@@ -109,7 +108,7 @@ Router.prototype.use = function(method, urlformat, options, handle) {
   if (urlformat instanceof RegExp) {
     options.urlformat = urlformat;
   } else {
-    _.extend(options, this.parseParams(urlformat, options.params));
+    _.extend(options, this.parseParams(urlformat));
   }
 
   var emitEvaluateEvent = function(httpContext, matched) {
@@ -268,39 +267,32 @@ Router.prototype.parseUrl = function(url, paramMap) {
 /** ------- **/
 
 var regexSplit = /(\?|\/)([^\?^\/]+)/g;
-Router.prototype.parseParams = function(path, params) {
-  path = path || '';
+Router.prototype.parseParams = function(s) {
+  s = s || '';
 
-  var restParams = path.match(regexSplit);
-  var that = this;
-  var paramMap = [];
-  var urlformat = [];
+  var restParams = s.match(regexSplit),
+    that = this,
+    paramMap = [],
+    urlformat = [];
 
   if (!restParams || restParams.length === 0) {
-    restParams = [path];
+    restParams = [s];
   }
 
   // replace named params with corresponding regexs and build paramMap.
-  var /*RegExp*/ isRestParam = new RegExp('^\/:');
-  _.each(restParams, function(/*string*/urlPart) {
-    if (isRestParam.test(urlPart)) {
-      var paramName = urlPart.substring(2);
-      var param = _.find(that.params, function(p) {
-        var paramConfig = params[paramName];
-        return (p.name === paramName && p.regex.source === paramConfig.regex);
-      });
+  _.each(restParams, function(str, i) {
+    var param = _.find(that.params, function(p) {
+      return str.substring(1) === ':' + p.name;
+    });
 
-      if (!param) {
-        logger.error('Route ' + path + ' does not have a matching REST parameter ' + paramName);
-        return;
-      }
+    if (param) {
       paramMap.push(param);
-      var regexStr = param.regex.toString();
-      urlformat.push('\\/' + (urlPart[0] === '?' ? '?' : '')); // push separator (double backslash escapes the ? or /)
-      urlformat.push(regexStr.substring(1, regexStr.length - 1)); // push regex
+      var rstr = param.regex.toString();
+      urlformat.push('\\/' + (str[0] === '?' ? '?' : '')); // push separator (double backslash escapes the ? or /)
+      urlformat.push(rstr.substring(1, rstr.length - 1)); // push regex
     } else {
       paramMap.push(null);
-      urlformat.push(urlPart);
+      urlformat.push(str);
     }
   });
 
