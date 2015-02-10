@@ -270,6 +270,7 @@ Router.prototype.parseUrl = function(url, paramMap) {
 var regexSplit = /(\?|\/)([^\?^\/]+)/g;
 Router.prototype.parseParams = function(path, params) {
   path = path || '';
+  params = params || {};
 
   var restParams = path.match(regexSplit);
   var that = this;
@@ -286,7 +287,7 @@ Router.prototype.parseParams = function(path, params) {
     if (isRestParam.test(urlPart)) {
       var paramName = urlPart.substring(2);
       var param = _.find(that.params, function(p) {
-        var paramConfig = params[paramName];
+        var paramConfig = params[paramName] || {};
         return (p.name === paramName && p.regex.source === paramConfig.regex);
       });
 
