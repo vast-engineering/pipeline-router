@@ -233,12 +233,34 @@ Router.prototype.use = function(method, urlformat, options, formats, pageType, h
         if (res) {
           var resTimeout = setTimeout(function() {
 
-            if (!res.headersSent) {
-              res.writeHead(500, {
-                'Content-Type': 'text/html'
-              });
+            var pgType = httpContext.pageType ? httpContext.pageType : 'unknown';
+            var reqUrl = httpContext.url.href ? httpContext.url.href : 'unknown';
+            var reqPipeline = httpContext.pipeline ? httpContext.pipeline : null;
+            var reqId = reqPipeline && reqPipeline.results && reqPipeline.results.length > 1 ? reqPipeline.results[1].requestId : null;
+
+            //logger.error('Router timeout (' + pgType + ') :: Request timed out after ' + options.timeout + ' miliseconds. All eventual subsequent errors in the context of subject request (' + reqUrl + ') are irrelevant and are the result of headers already being sent to indicate timed out request on the Router level');
+            logger.info('Router timeout (' + pgType + ') :: Request timed out after ' + options.timeout + ' miliseconds. Error is being propagated to the Controller layer' + (reqId ? " [requestId = '" + reqId + "']" : '') + '.');
+
+
+            // log router timeout counts to graphite if metrics are enabled.
+            if (httpContext.app.plugins.metrics) {
+              httpContext.app.plugins.metrics.increment('router-timeout-' + pgType);
             }
-            res.end('Request timed out');
+
+            // if corresponding pipeline is accessible - propagate error to such, otherwise just throw error to output:
+            if (reqPipeline) {
+              reqPipeline.end(new Error("Router timeout. [timed out after " + options.timeout + " ms]"));
+            }
+            else {
+              var timeoutResponseCode = options.timeoutResponseCode ? options.timeoutResponseCode : 500;
+
+              if (!res.headersSent) {
+                res.writeHead(timeoutResponseCode, {
+                  'Content-Type': 'text/html'
+                });
+              }
+              res.end('Request timed out');
+            }
 
           }, options.timeout);
 
