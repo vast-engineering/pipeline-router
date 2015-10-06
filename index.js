@@ -237,9 +237,10 @@ Router.prototype.use = function(method, urlformat, options, formats, pageType, h
             var reqUrl = httpContext.url.href ? httpContext.url.href : 'unknown';
             var reqPipeline = httpContext.pipeline ? httpContext.pipeline : null;
             var reqId = reqPipeline && reqPipeline.results && reqPipeline.results.length > 1 ? reqPipeline.results[1].requestId : null;
+            var xRequestId = reqPipeline && reqPipeline.results && reqPipeline.results[0] && reqPipeline.results[0].req && reqPipeline.results[0].req.headers && reqPipeline.results[0].req.headers['x-request-id'] ? reqPipeline.results[0].req.headers['x-request-id'] : undefined;
 
             //logger.error('Router timeout (' + pgType + ') :: Request timed out after ' + options.timeout + ' miliseconds. All eventual subsequent errors in the context of subject request (' + reqUrl + ') are irrelevant and are the result of headers already being sent to indicate timed out request on the Router level');
-            logger.info('Router timeout (' + pgType + ') :: Request timed out after ' + options.timeout + ' miliseconds. Error is being propagated to the Controller layer' + (reqId ? " [requestId = '" + reqId + "']" : '') + '.');
+            logger.info('Router timeout (' + pgType + ') :: Request timed out after ' + options.timeout + ' miliseconds. Error is being propagated to the Controller layer' + (reqId ? " [requestId = '" + reqId + "']" : '') + ' [X-Request-ID=' + xRequestId + '].');
 
 
             // log router timeout counts to graphite if metrics are enabled.
