@@ -239,28 +239,31 @@ Router.prototype.use = function(method, urlformat, options, formats, pageType, h
             var reqId = reqPipeline && reqPipeline.results && reqPipeline.results.length > 1 ? reqPipeline.results[1].requestId : null;
             var xRequestId = reqPipeline && reqPipeline.results && reqPipeline.results[0] && reqPipeline.results[0].req && reqPipeline.results[0].req.headers && reqPipeline.results[0].req.headers['x-request-id'] ? reqPipeline.results[0].req.headers['x-request-id'] : undefined;
 
-            //logger.error('Router timeout (' + pgType + ') :: Request timed out after ' + options.timeout + ' miliseconds. All eventual subsequent errors in the context of subject request (' + reqUrl + ') are irrelevant and are the result of headers already being sent to indicate timed out request on the Router level');
-            logger.info('Router timeout (' + pgType + ') :: Request timed out after ' + options.timeout + ' miliseconds. Error is being propagated to the Controller layer' + (reqId ? " [requestId = '" + reqId + "']" : '') + ' [X-Request-ID=' + xRequestId + '].');
+            // for some reason this needs to be tested otherwise we may end up in a router timeouts even after no timeout occurred:
+            if (!res.headersSent) {
+
+              //logger.error('Router timeout (' + pgType + ') :: Request timed out after ' + options.timeout + ' miliseconds. All eventual subsequent errors in the context of subject request (' + reqUrl + ') are irrelevant and are the result of headers already being sent to indicate timed out request on the Router level');
+              logger.info('Router timeout (' + pgType + ') :: Request timed out after ' + options.timeout + ' miliseconds. Error is being propagated to the Controller layer' + (reqId ? " [requestId = '" + reqId + "']" : '') + ' [X-Request-ID=' + xRequestId + '].');
 
 
-            // log router timeout counts to graphite if metrics are enabled.
-            if (httpContext.app.plugins.metrics) {
-              httpContext.app.plugins.metrics.increment('router-timeout-' + pgType);
-            }
+              // log router timeout counts to graphite if metrics are enabled.
+              if (httpContext.app.plugins.metrics) {
+                httpContext.app.plugins.metrics.increment('router-timeout-' + pgType);
+              }
 
-            // if corresponding pipeline is accessible - propagate error to such, otherwise just throw error to output:
-            if (reqPipeline) {
-              reqPipeline.end(new Error("Router timeout. [timed out after " + options.timeout + " ms]"));
-            }
-            else {
-              var timeoutResponseCode = options.timeoutResponseCode ? options.timeoutResponseCode : 500;
+              // if corresponding pipeline is accessible - propagate error to such, otherwise just throw error to output:
+              if (reqPipeline) {
+                reqPipeline.end(new Error("Router timeout. [timed out after " + options.timeout + " ms]"));
+              }
+              else {
+                var timeoutResponseCode = options.timeoutResponseCode ? options.timeoutResponseCode : 500;
 
-              if (!res.headersSent) {
                 res.writeHead(timeoutResponseCode, {
                   'Content-Type': 'text/html'
                 });
+
+                res.end('Request timed out');
               }
-              res.end('Request timed out');
             }
 
           }, options.timeout);
